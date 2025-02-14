@@ -1,0 +1,66 @@
+{
+    "name": "360 Synergy Extension",
+    "description": "Podio extension powered by 360SynergyTech. It is build to get leads status and stats into Podio activity section.",
+    "version": "0.01",
+	"icons": {
+        "128": "synergy-logo.png"
+     },
+	"permissions": [
+		"tabs",
+		"storage"
+	  ],
+	"background": {
+		"scripts": ["background.js"],
+		"persistent": true
+	  },
+    "author": "360synergytech",
+	"content_security_policy": "script-src 'self' 'unsafe-inline'; object-src 'self'",
+	"browser_action": {
+  
+	},
+	"content_scripts": [
+		{
+			"js": [
+				"contentScript.js"
+				
+			],
+	
+            "matches": [        
+                "https://podio.com/*"               
+            ],
+			"exclude_matches": [
+                "https://podio.com/connections",
+                "https://podio.com/calendar",
+                "https://podio.com/tasks",
+                "https://podio.com/",
+                "https://podio.com/users/*",
+                "https://podio.com/settings/account",
+                "https://podio.com/*/organization/pricing",
+                "https://podio.com/contracts/*",
+                "https://podio.com/batches",   
+                "https://podio.com/settings/shares",                 
+                "https://podio.com/login",
+                "https://podio.com/home",
+                "https://podio.com/*/*/apps/*",
+                "https://podio.com/market/*",
+                "https://podio.com/members/*",
+                "https://podio.com/spaces/*",
+                "https://podio.com/*/*/members",
+                "https://podio.com/*/*/apps",
+                "https://podio.com/*/*/tasks",
+                "https://podio.com/*/*/spaces/edit",
+                "https://podio.com/*/*/files",
+                "https://podio.com/*/*/calendar",
+                "https://podio.com/*/*/action/*",
+                "https://podio.com/login?",
+                "https://podio.com/login",
+                "https://podio.com/settings/*",
+                "https://podio.com/login?force_locale=en_US",
+                "https://podio.com/errors/payment-required",
+                "https://podio.com/oauth/authorize?redirect_uri=https%3A%2F%2Fdevelopers.podio.com[…]s%2Fget-item-by-app-item-id-66506688&client_id=company-read-only"
+            ],
+            "run_at": "document_end"
+        }
+    ],
+    "manifest_version": 2
+}

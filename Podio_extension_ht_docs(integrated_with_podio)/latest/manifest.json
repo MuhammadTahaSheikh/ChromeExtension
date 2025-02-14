@@ -1,0 +1,25 @@
+{
+  "name": "Synergytech",
+  "description": "Podio extension powered by 360SynergyTech. It is build to get leads status and stats into Podio activity section.",
+  "version": "0.01",
+  "content_security_policy": "script-src 'self' 'unsafe-inline'; object-src 'self'",
+  "author": "360synergytech",
+  "browser_action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "js": ["contentScript.js"],
+      "matches": [
+        "https://podio.com/360synergytech-llapf2k0wa/project-management",
+        "https://podio.com/gilcappartnerscom/gp-crm",
+        "https://podio.com/*",
+        "http://localhost/360db/gettingCleintId/Entension/popup.js"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+
+
+  "manifest_version": 2
+}

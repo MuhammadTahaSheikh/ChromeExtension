@@ -1,0 +1,35 @@
+{
+    "name": "Inject MV2(Content)",
+    "description": "Podio extension powered by 360SynergyTech. It is build to get leads status and stats into Podio activity section.",
+    "version": "0.01",
+    "author": "360synergytech",
+    "content_scripts": [
+        {
+            "js": [
+                
+                "contentScript.js"
+            ],
+            "matches": [
+				"https://podio.com/sellyourhomes/syh-crm"
+               
+            ],
+            "exclude_matches":[
+				"https://podio.com/connections",
+				"https://podio.com/calendar",
+				"https://podio.com/tasks",
+				"https://podio.com/",
+				"https://podio.com/users/*",
+				"https://podio.com/settings/account",
+				"https://podio.com/*/organization/pricing",
+				"https://podio.com/contracts/*",
+				"https://podio.com/batches",
+				"https://podio.com/settings/shares",
+				"https://podio.com/login",
+				"https://podio.com/home",
+				"https://podio.com/*/*/apps/*"
+			],
+            "run_at": "document_end"
+        }
+    ],
+    "manifest_version": 2
+}

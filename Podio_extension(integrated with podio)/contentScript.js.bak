@@ -1,0 +1,18 @@
+
+const init = function() {
+  const var1=document.querySelector("#wrapper");
+      const injectElement = document.createElement('div');
+      injectElement.className = '360Synergy';
+       injectElement.innerHTML =  `
+       <div class="responsive">
+
+       <iframe  class="responsive-iframe" frameborder="0" style="width: 100%;  
+       height: 1476px; 
+   }"
+       src="http://localhost/podio_extension/podio_ext.php" ></iframe> </div>`
+
+  var1.prepend(injectElement);
+  }
+  init();
+
+

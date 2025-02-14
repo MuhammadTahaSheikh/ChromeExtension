@@ -1,0 +1,1056 @@
+<?php
+header('Access-Control-Allow-Origin: *');
+
+header('Access-Control-Allow-Methods: GET, POST');
+
+header("Access-Control-Allow-Headers: X-Requested-With");
+?>
+<?php
+
+$user = 'root';
+$password = '';
+
+$database = 'podio_extension';
+
+
+$servername = 'localhost';
+$mysqli = new mysqli(
+  $servername,
+  $user,
+  $password,
+  $database
+);
+
+if ($mysqli->connect_error) {
+  die('Connect Error (' .
+    $mysqli->connect_errno . ') ' .
+    $mysqli->connect_error);
+}
+$a = ['hot', 'warm', 'cold'];
+$i = 0;
+while ($i < count($a)) {
+  $temp = $a[$i];
+  $sqlw = "SELECT DATE(created_at) AS `Date`, COUNT(*) AS `Leads` FROM leads WHERE created_at between date_sub(now(),INTERVAL 1 WEEK) and now() AND `temperature`= '$temp'  AND
+  Cleints_id=17724464";
+  $resultw = $mysqli->query($sqlw);
+  $sqlm = "SELECT DATE(created_at) AS `Date`, COUNT(*) AS `Leads` FROM leads WHERE created_at between date_sub(now(),INTERVAL 1 MONTH) and now() AND `temperature`= '$temp'  AND
+  Cleints_id=17724464";
+  $resultm = $mysqli->query($sqlm);
+  $sql3m = "SELECT DATE(created_at) AS `Date`, COUNT(*) AS `Leads` FROM leads WHERE created_at between date_sub(now(),INTERVAL 3 MONTH) and now() AND `temperature`= '$temp'  AND
+  Cleints_id=17724464";
+  $result3m = $mysqli->query($sql3m);
+  if ($temp == 'hot') {
+    while ($rows = $resultw->fetch_assoc()) {
+      $HotWeek = $rows['Leads'];
+      // echo $HotWeek;
+
+    }
+    while ($rows = $resultm->fetch_assoc()) {
+      $HotMonth = $rows['Leads'];
+    }
+    while ($rows = $result3m->fetch_assoc()) {
+      $Hot3Month = $rows['Leads'];
+    }
+    $i++;
+  } elseif ($temp == 'warm') {
+    while ($row_warmw = $resultw->fetch_assoc()) {
+
+      $WarmWeek = $row_warmw['Leads'];
+    }
+    while ($row_warmm = $resultm->fetch_assoc()) {
+      $WarmMonth = $row_warmm['Leads'];
+    }
+    while ($row_warm3m = $result3m->fetch_assoc()) {
+      $Warm3Month = $row_warm3m['Leads'];
+    }
+    $i++;
+  } elseif ($temp == 'cold') {
+    while ($row_coldw = $resultw->fetch_assoc()) {
+      $ColdWeek = $row_coldw['Leads'];
+    }
+    while ($row_coldm = $resultm->fetch_assoc()) {
+      $ColdMonth = $row_coldm['Leads'];
+    }
+    while ($row_cold3m = $result3m->fetch_assoc()) {
+      $Cold3Month = $row_cold3m['Leads'];
+    }
+    $i++;
+  }
+}
+
+// Insert a record in DB when new lead is created in Podio
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {		
+$lead_id = $_REQUEST['id'];
+echo $lead_id;
+$type = $_REQUEST['type'];
+$created_at = $_REQUEST['created_at'];
+$temp = $_REQUEST['temperature'];
+$cid = $_REQUEST['Cleints_id'];
+$drip = $_REQUEST['leads_under_drip'];
+$f_name = $_REQUEST['first_name'];
+$l_name = $_REQUEST['last_name'];
+$phone = $_REQUEST['phone_num'];
+$email = $_REQUEST['email'];
+$appt_data = $_REQUEST['appt_data'];
+
+// check for empty values and set defaults if necessary
+if (empty($lead_id)) {
+    $lead_id = 0;
+}
+if (empty($type)) {
+    $type = "";
+}
+if (empty($created_at)) {
+    $created_at = "";
+}
+if (empty($temp)) {
+    $temp = "";
+}
+if (empty($cid)) {
+    $cid = 0;
+}
+if (empty($drip)) {
+    $drip = 0;
+}
+if (empty($f_name)) {
+    $f_name = "";
+}
+if (empty($l_name)) {
+    $l_name = "";
+}
+if (empty($phone)) {
+    $phone = "";
+}
+if (empty($email)) {
+    $email = "";
+}
+if (empty($appt_id)) {
+    $appt_id = 0;
+}
+if (empty($appt_title)) {
+    $appt_title = "";
+}
+if (empty($appt_status)) {
+    $appt_status = "";
+}
+
+// Lead Section
+
+// prepare the SQL query with placeholders for the values
+$sql = "INSERT INTO `leads`(`lead_id`, `type`, `created_at`, `temperature`, `Cleints_id`, `leads_under_drip`) VALUES ($lead_id, $type, $created_at, $temp, $cid, $drip)";
+$stmt = $mysqli->prepare($sql);
+
+// bind the values to the placeholders
+//$stmt->bind_param("isssii", $lead_id, $type, $created_at, $temp, $cid, $drip);
+
+// execute the prepared statement
+if ($stmt->execute()) {
+    echo "Lead Inserted!";
+    exit();
+} else {
+    echo "Lead Not Inserted!"."\n";
+    echo 'Error: ('. $stmt->errno .')' . $stmt->error."\n";
+}
+
+// close the statement
+$stmt->close();
+
+// Appointment Section
+
+$appt_data = json_decode($appt_data, true);
+//$test = json_decode($appt_data[0], true)['appt_id'];
+//echo "Test:".$test;
+
+foreach($appt_data as $val){
+	$data = json_decode($val, true);
+	$appt_id = $data['appt_id'];
+	echo "\n".$appt_id."\n";
+	$appt_title = $data['appt_title'];
+	//echo "\n".$appt_title."\n";
+	$appt_status = $data['appt_status'];
+	//echo "\n".$appt_status."\n";
+	$appt_datetime = $data['appt_datetime'];
+	//echo "\n".$appt_datetime."\n";
+
+// Insert appointment into DB
+    $sql = "INSERT INTO `appointments`(`appt_id`, `title`, `date`, `status`, `Cleints_id`) VALUES (?, ?, ?, ?, ?)";
+    $stmt = $mysqli->prepare($sql);
+    if (!$stmt) {
+        echo "Error: (" . $mysqli->errno . ") " . $mysqli->error."\n";
+    } else {
+        // bind the values to the placeholders
+        $stmt->bind_param("isssi", $appt_id, $appt_title, $appt_datetime, $appt_status, $cid);
+        // execute the prepared statement
+        if ($stmt->execute()) {
+            echo "Appointment Inserted!";
+        } else {
+            echo "Appointment Not Inserted!"."\n";
+            echo 'Error: ('. $stmt->errno .')' . $stmt->error."\n";
+        }
+
+        // close the statement
+        $stmt->close();
+    }
+}
+
+// Client Section
+
+// Insert client into DB
+    $sql = "INSERT INTO `cleint`(`Cleints_id`, `first_name`, `last_name`, `phone_num`, `email`) VALUES (?, ?, ?, ?, ?)";
+    $stmt = $mysqli->prepare($sql);
+    if (!$stmt) {
+        echo "Error: (" . $mysqli->errno . ") " . $mysqli->error."\n";
+    } else {
+        // bind the values to the placeholders
+        $stmt->bind_param("issss", $cid, $f_name, $l_name, $phone, $email);
+        // execute the prepared statement
+        if ($stmt->execute()) {
+            echo "Client Inserted!";
+        } else {
+            echo "Client Not Inserted!"."\n";
+            echo 'Error: ('. $stmt->errno .')' . $stmt->error."\n";
+        }
+
+        // close the statement
+        $stmt->close();
+    }
+}
+
+$sqlcheck = "SELECT * from `appointments` WHERE status IN ('Completed','Pending','Rescheduled','Cancelled') AND Cleints_id=17724464";
+$resultch = $mysqli->query($sqlcheck);
+$b = ['Completed','Pending','Rescheduled','Cancelled'];
+$j = 0;
+$cinc = 0;
+$pinc = 0;
+$dinc = 0;
+$cninc = 0;
+
+while ($j < count($b)) {
+  // $stat=$b[$j];
+
+  while ($rows = $resultch->fetch_assoc()) {
+    $check = $rows['status'];
+
+    if ($check == 'Completed') {
+      // echo $HotWeek;
+      $cinc++;
+
+      $j++;
+    } elseif ($check == 'Pending') {
+      // echo $HotWeek;
+      $pinc++;
+
+      $j++;
+    } elseif ($check == 'Rescheduled') {
+      // echo $HotWeek;
+      $dinc++;
+
+      $j++;
+    } elseif ($check == 'Cancelled') {
+      // echo $HotWeek;
+      $cninc++;
+
+      $j++;
+    } else {
+      $j++;
+    }
+  }
+  $j++;
+}
+$c = ['sms-in', 'sms-out', 'call-in', 'call-out'];
+$k = 0;
+while ($k < count($c)) {
+  $tempt = $c[$k];
+  $sqlw = "SELECT DATE(created_at) AS `Date`, COUNT(*) AS `telemarketing` FROM telemarketing WHERE created_at between date_sub(now(),INTERVAL 1 WEEK) and now() AND `communication_type`= '$tempt'  AND
+    Cleints_id=1";
+  $resultw = $mysqli->query($sqlw);
+  $sqlm = "SELECT DATE(created_at) AS `Date`, COUNT(*) AS `telemarketing` FROM telemarketing WHERE created_at between date_sub(now(),INTERVAL 1 MONTH) and now() AND `communication_type`= '$tempt'  AND
+    Cleints_id=1";
+  $resultm = $mysqli->query($sqlm);
+  $sql3m = "SELECT DATE(created_at) AS `Date`, COUNT(*) AS `telemarketing` FROM telemarketing WHERE created_at between date_sub(now(),INTERVAL 3 MONTH) and now() AND `communication_type`= '$tempt'  AND
+    Cleints_id=1";
+  $result3m = $mysqli->query($sql3m);
+  if ($tempt == 'sms-in') {
+    while ($rows = $resultw->fetch_assoc()) {
+      $smsinw = $rows['telemarketing'];
+      // echo $HotWeek;
+
+    }
+    while ($rows = $resultm->fetch_assoc()) {
+      $smsinm = $rows['telemarketing'];
+    }
+    while ($rows = $result3m->fetch_assoc()) {
+      $smsin3m = $rows['telemarketing'];
+    }
+    $k++;
+  } elseif ($tempt == 'sms-out') {
+    while ($row_warmw = $resultw->fetch_assoc()) {
+
+      $smsoutw = $row_warmw['telemarketing'];
+    }
+    while ($row_warmm = $resultm->fetch_assoc()) {
+      $smsoutm = $row_warmm['telemarketing'];
+    }
+    while ($row_warm3m = $result3m->fetch_assoc()) {
+      $smsout3m = $row_warm3m['telemarketing'];
+    }
+    $k++;
+  } elseif ($tempt == 'call-in') {
+    while ($row_coldw = $resultw->fetch_assoc()) {
+      $callinw = $row_coldw['telemarketing'];
+    }
+    while ($row_coldm = $resultm->fetch_assoc()) {
+      $callinm = $row_coldm['telemarketing'];
+    }
+    while ($row_cold3m = $result3m->fetch_assoc()) {
+      $callin3m = $row_cold3m['telemarketing'];
+    }
+    $k++;
+  } elseif ($tempt == 'call-out') {
+    while ($row_coldw = $resultw->fetch_assoc()) {
+      $calloutw = $row_coldw['telemarketing'];
+    }
+    while ($row_coldm = $resultm->fetch_assoc()) {
+      $calloutm = $row_coldm['telemarketing'];
+    }
+    while ($row_cold3m = $result3m->fetch_assoc()) {
+      $callout3m = $row_cold3m['telemarketing'];
+    }
+    $k++;
+  }
+}
+
+$d = ['text', 'cold'];
+$l = 0;
+while ($l < count($d)) {
+  $tempty = $d[$l];
+  $sqlw = "SELECT DATE(created_at) AS `Date`, COUNT(*) AS `Leads` FROM leads WHERE created_at between date_sub(now(),INTERVAL 1 WEEK) and now() AND `type`= '$tempty'  AND
+    Cleints_id=1";
+  $resultw = $mysqli->query($sqlw);
+  $sqlm = "SELECT DATE(created_at) AS `Date`, COUNT(*) AS `Leads` FROM leads WHERE created_at between date_sub(now(),INTERVAL 1 MONTH) and now() AND `type`= '$tempty'  AND
+    Cleints_id=1";
+  $resultm = $mysqli->query($sqlm);
+  $sql3m = "SELECT DATE(created_at) AS `Date`, COUNT(*) AS `Leads` FROM leads WHERE created_at between date_sub(now(),INTERVAL 3 MONTH) and now() AND `type`= '$tempty'  AND
+    Cleints_id=1";
+  $result3m = $mysqli->query($sql3m);
+  if ($tempty == 'text') {
+    while ($rows = $resultw->fetch_assoc()) {
+      $leadw = $rows['Leads'];
+    }
+    while ($rows = $resultm->fetch_assoc()) {
+      $leadm = $rows['Leads'];
+    }
+    while ($rows = $result3m->fetch_assoc()) {
+      $lead3m = $rows['Leads'];
+    }
+    $l++;
+  }
+  if ($tempty == 'cold') {
+    while ($rows = $resultw->fetch_assoc()) {
+      $leadcw = $rows['Leads'];
+    }
+    while ($rows = $resultm->fetch_assoc()) {
+      $leadcm = $rows['Leads'];
+    }
+    while ($rows = $result3m->fetch_assoc()) {
+      $leadc3m = $rows['Leads'];
+    }
+    $l++;
+  }
+}
+
+
+
+$sqlcsr = "select * from `campaign_success` ";
+$rescsr = $mysqli->query($sqlcsr);
+
+
+$sqlchecklud = "SELECT * from `leads` WHERE Cleints_id=1";
+$resultlud = $mysqli->query($sqlchecklud);
+$arr_lud = ['0', '1'];
+$lud = 0;
+$trinc = 0;
+$fainc = 0;
+
+while ($lud < count($arr_lud)) {
+  // $stat=$b[$j];
+
+  while ($rows = $resultlud->fetch_assoc()) {
+    $check = $rows['leads_under_drip'];
+
+    if ($check == '1') {
+      // echo $HotWeek;
+      $trinc++;
+
+      $lud++;
+    } elseif ($check == '0') {
+      // echo $HotWeek;
+      $fainc++;
+
+      $lud++;
+    } else {
+      $lud++;
+    }
+  }
+  $lud++;
+}
+
+
+$sqlvah = "select * from `va_hours` ";
+$resvah = $mysqli->query($sqlvah);
+
+
+$linechart_mon = $mysqli->query("SELECT count(*) as month_count, monthname(created_at), YEAR(created_at) FROM telemarketing GROUP BY MONTH(created_at),YEAR(created_at) ORDER BY created_at;");
+$monthname = [];
+foreach ($linechart_mon as $data) {
+  $monthnamech[] = $data['monthname(created_at)'];
+}
+$bar_chart = $mysqli->query("SELECT MONTHNAME as monthname, SUM(amount) as amount FROM bar_chart GROUP BY monthname");
+// $bar_chart_res= $mysqli->query($bar_chart);
+foreach ($bar_chart as $data) {
+  $month[] = $data['monthname'];
+  $amount[] = $data['amount'];
+}
+// $mysqli->close();
+
+// $profitchart=$mysqli->query("SELECT `year` as year, SUM(sale) as sale FROM `profit_chart` GROUP BY year" );
+// $bar_chart_res= $mysqli->query($bar_chart);
+$profitchart = $mysqli->query("SELECT `year`, SUM(sale) as sale FROM `profit_chart` GROUP BY year");
+
+foreach ($profitchart as $data) {
+  $year[] = $data['year'];
+  $sale[] = $data['sale'];
+}
+
+
+$linechart = $mysqli->query("SELECT count(*) as month_count, MONTHNAME(created_at), YEAR(created_at) FROM telemarketing WHERE `communication_type`='sms-in' GROUP BY MONTH(created_at),YEAR(created_at) ORDER BY created_at");
+// $bar_chart_res= $mysqli->query($bar_chart);
+
+foreach ($linechart as $data) {
+  $MONTHNAME[] = $data['MONTHNAME(created_at)'];
+
+  $month_count_smsin[] = $data['month_count'];
+}
+// print_r($MONTHNAME);
+$linechartsmsout = $mysqli->query("SELECT count(*) as month_count1, MONTHNAME(created_at), YEAR(created_at) FROM telemarketing WHERE `communication_type`='sms-out' GROUP BY MONTH(created_at),YEAR(created_at) ORDER BY created_at");
+// $bar_chart_res= $mysqli->query($bar_chart);
+foreach ($linechartsmsout as $data2) {
+  $MONTHNAME1[] = $data2['MONTHNAME(created_at)'];
+  $month_count_smsout[] = $data2['month_count1'];
+}
+
+
+$linechartcallin = $mysqli->query("SELECT count(*) as month_count, MONTHNAME(created_at), YEAR(created_at) FROM telemarketing WHERE `communication_type`='call-in' GROUP BY MONTH(created_at),YEAR(created_at) ORDER BY created_at");
+// $bar_chart_res= $mysqli->query($bar_chart);
+foreach ($linechartcallin as $data3) {
+  $month_count_callin[] = $data3['month_count'];
+}
+
+
+$linechartcallout = $mysqli->query("SELECT count(*) as month_count, MONTHNAME(created_at), YEAR(created_at) FROM telemarketing WHERE `communication_type`='call-out' GROUP BY MONTH(created_at),YEAR(created_at) ORDER BY created_at");
+// $bar_chart_res= $mysqli->query($bar_chart);
+foreach ($linechartcallout as $data4) {
+  $month_count_callout[] = $data4['month_count'];
+}
+
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+  <link rel="stylesheet" href="main.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script> -->
+
+  <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; minimum-scale=1.0;" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;700&family=Outfit:wght@100;200;300;400;500;600;700;800;900&family=Roboto:ital,wght@1,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;500&family=Outfit:wght@100;200;300;400;500;600;700;800;900&family=Roboto:ital,wght@1,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;600&family=Outfit:wght@100;200;300;400;500;600;700;800;900&family=Roboto:ital,wght@1,900&display=swap" rel="stylesheet">
+  <title>360Synergy</title>
+  <script src="test.js"></script>
+  
+</head>
+
+<body style="overflow: hidden;">
+<div>
+  <div class="grid-container">
+
+    <div class="grid-item">
+
+      <div class="fl-div1">Lead Temperature</div>
+      <table class="t-1">
+        <tr>
+
+          <th class="th-1"><span class="th-s1a">Week</span></th>
+          <th class="th-1a"><span class="th-s1a">Month</span></th>
+          <th class="th-1b"><span class="th-s1b">3 Month</span></th>
+        </tr>
+      </table>
+      <table class="tab-1">
+        <tr>
+          <td class="td-1">
+            <div class="circle" style="background-color:#FF8B38 ;  "> </div><span>Hot</span>
+          </td>
+
+          <td class="td-2s"><?php echo $HotWeek ?></td>
+          <td class="td-2jj"><?php echo $HotMonth ?></td>
+          <td class="td-2pp"><?php echo $Hot3Month ?></td>
+        </tr>
+        <tr>
+          <td class="td-1">
+            <div class="circle" style="background-color:#FFC738 ;  "></div><span>Warm</span>
+          </td>
+          <td class="td-2s"><?php echo $WarmWeek ?></td>
+          <td class="td-2jj"><?php echo $WarmMonth ?></td>
+          <td class="td-2pp"><?php echo $Warm3Month ?></td>
+        </tr>
+        <tr>
+          <td class="td-1">
+            <div class="circle" style="background-color:#38ABFF ;  "></div><span>Cold</span>
+          </td>
+          <td class="td-2s"><?php echo $ColdWeek ?></td>
+          <td class="td-2jj"><?php echo $ColdMonth ?></td>
+          <td class="td-2pp"><?php echo $Cold3Month ?></td>
+        </tr>
+      </table>
+
+
+    </div>
+    <div class="grid-item1">
+      <div class="d-3"> Appointments</div>
+      <div>
+        <table class="tb-c">
+
+          <tr class="l1">
+            <td class="cc">
+              <div class="circle" style="background-color:#2DC12A ;  "></div>Completed
+            </td>
+            <td class="sp1"><?php echo $cinc ?></td>
+          </tr>
+          <tr class="l1">
+            <td class="cc">
+              <div class="circle" style="background-color: #FFC738;  "></div><span>Pending</span>
+            </td>
+            <td class="sp2"><?php echo $pinc ?></td>
+          </tr>
+          <tr class="l1">
+            <td class="cc">
+              <div class="circle" style="background-color: #FF8B38;   "></div><span>Due Order</span>
+            </td>
+            <td class="sp3"><?php echo $dinc ?></td>
+          </tr>
+          <tr class="l1">
+            <td class="cc">
+              <div class="circle" style="background-color: #FF3838;   "></div><span>Cancelled</span>
+            </td>
+
+            <td class="sp4"><?php echo $cninc ?></td>
+          </tr>
+        </table>
+
+      </div>
+    </div>
+    <div class="grid-item2">
+      <div class="d-2">Leads Under Drip</div>
+      <div class="d-2a"><?php echo $trinc ?></div>
+    </div>
+    <div class="grid-item3">
+      <div class="fl-div2">Telemarketing</div>
+      <table class="t-1" style="float: right;">
+        <tr>
+          <th class="th-1aa"><span class="th-s1a">Week</span></th>
+          <th class="th-1ab"><span class="th-s1a">Month</span></th>
+          <th class="th-1b"><span class="th-s1b">3 Month</span></th>
+
+        </tr>
+      </table>
+      <table class="tab_1">
+        <tr>
+          <td class="td-1a">SMS<span style="color: #2DC12A; background-color: white;padding-left: 4%;">In</span></td>
+          <td class="td-31"><?php echo $smsinw ?></td>
+          <td class="td-3a1"><?php echo $smsinm ?></td>
+          <td class="td-3b1"><?php echo $smsin3m ?></td>
+        </tr>
+        <tr>
+          <td class="td-1a">SMS<span style="color: #FF3838; background-color: white;padding-left: 4%;">Out</span>
+          </td>
+          <td class="td-31"><?php echo $smsoutw ?></td>
+          <td class="td-3a1"><?php echo $smsoutm ?></td>
+          <td class="td-3b1"><?php echo $smsout3m ?></td>
+        </tr>
+        <tr>
+          <td class="td-1a">Calls<span style="color: #FFC738; background-color: white;padding-left: 4%;">In</span>
+          </td>
+          <td class="td-31"><?php echo $callinw ?></td>
+          <td class="td-3a1"><?php echo $callinm ?></td>
+          <td class="td-3b1"><?php echo $callin3m ?></td>
+        </tr>
+        <tr>
+          <td class="td-1a">Calls<span style="color: #FF8B38; padding-left: 4%;">Out</span>
+          </td>
+          <td class="td-31"><?php echo $calloutw ?></td>
+          <td class="td-3a1"><?php echo $calloutm ?></td>
+          <td class="td-3b1"><?php echo $callout3m ?></td>
+        </tr>
+      </table>
+    </div>
+
+
+
+
+
+
+
+  </div>
+  <div class="grid-container1">
+    <div class="grid-item1a">
+      <div class="gia">
+        SMS In/Out Graph
+      </div>
+      <!-- <img src="Chart.png" class="img1"/> -->
+      <canvas id="speedChart"></canvas>
+
+    </div>
+    <div class="grid-item1b">
+      <table class="item3d11">
+        <div>
+
+          <th class="th-111">Marketing<span style="margin-left: 1px;">Expense</span></th>
+
+          <th class="th-121">Week</th>
+          <th class="th-121a">Month</th>
+          <th class="th-121b">3 Month</th>
+
+        </div>
+
+      </table>
+      <div class="chart-container">
+        <canvas id="chart"></canvas>
+      </div>
+
+
+      <!-- <img src="Chart1.png" class="img2"/> -->
+    </div>
+  </div>
+  <div class="container3">
+    <div class="item1">
+      <p class="d7-p">Text Lead</p>
+      <table class="td7">
+
+        <tr class="tr-7">
+          <th class="th-7">Week</th>
+          <th class="th-7a">Month</th>
+          <th class="th-7b">3 Month</th>
+        </tr>
+        <tr>
+          <td class="td-7"><?php echo $leadw ?></td>
+          <td class="td-7a"><?php echo $leadm ?></td>
+          <td class="td-7b"><?php echo $lead3m ?></td>
+        </tr>
+      </table>
+    </div>
+    <div class="item2">
+      <p class="d7-p">Cold<span style="padding-left: 3px; padding-right:3%;">Call</span>Leads</p>
+      <table class="td7">
+
+        <tr class="tr-7">
+          <th class="th-7">Week</th>
+          <th class="th-7a">Month</th>
+          <th class="th-7b">3 Month</th>
+        </tr>
+        <tr>
+          <td class="td-7"><?php echo $leadcw ?></td>
+          <td class="td-7a"><?php echo $leadcm ?></td>
+          <td class="td-7b"><?php echo $leadc3m ?></td>
+        </tr>
+      </table>
+    </div>
+    <div class="item3">
+      <div class="item3d">VA’s Hours</div>
+      <!-- <div id="table-wrapper"> -->
+      <!-- <div id="table-scroll_VA"> -->
+      <!-- <div> -->
+      <table class="item3d1">
+
+
+        <th class="th-11">#</th>
+        <th class="th-11a">Name</th>
+
+        <th class="th-12">Week</th>
+        <th class="th-12a">Month</th>
+        <th class="th-12b">3 Month</th>
+
+
+
+      </table>
+      <!-- </div> -->
+      <div id="table-scroll_VA">
+        <table>
+          <?php
+          $i = 1;
+          $temp = 1;
+          $ah = "SELECT * FROM va_hours WHERE cleints_id=1";
+          $resultah = $mysqli->query($ah);
+          while ($row = mysqli_fetch_assoc($resultah)) {
+            $temp = $row['id'];
+          }
+          while ($i <= $temp) {
+
+            $ta = "SELECT *, SUM(TIMESTAMPDIFF(HOUR,`time-in`,`time-out`)) AS `working_hours` from va_hours WHERE  created_at between date_sub(now(),INTERVAL 1 WEEK) and now() AND id=$i AND cleints_id=1";
+            $resultta = $mysqli->query($ta);
+            $ta1 = "SELECT *, SUM(TIMESTAMPDIFF(HOUR,`time-in`,`time-out`)) AS `working_hours_m` from va_hours WHERE  created_at between date_sub(now(),INTERVAL 1 MONTH) and now() AND id=$i AND cleints_id=1";
+            $resultta1 = $mysqli->query($ta1);
+            $ta2 = "SELECT *, SUM(TIMESTAMPDIFF(HOUR,`time-in`,`time-out`)) AS `working_hours_3m` from va_hours WHERE  created_at between date_sub(now(),INTERVAL 3 MONTH) and now() AND id=$i AND cleints_id=1";
+            $resultta2 = $mysqli->query($ta2);
+
+
+            while ($row = mysqli_fetch_assoc($resvah)) {
+
+          ?>
+              <tr>
+                <td>
+                  <div class="td-12"><?php echo $row['id'] ?></div>
+                </td>
+
+                <td>
+                  <div class="td-12a">
+                    <div class="td-12b"><?php echo $row['Name'] ?></div>
+                  </div>
+                </td>
+                <?php
+                $cond = 0;
+                $cond1 = 0;
+                $cond2 = 0;
+                while ($row = mysqli_fetch_assoc($resultta)) {
+                  if ($row['working_hours'] == '') {
+                    $cond = 0;
+                  } else {
+                    $cond = $row['working_hours'];
+                  }
+
+                ?>
+                  <td>
+                    <div class="td-12cc"><?php echo $cond ?></div>
+                  </td>
+                <?php
+
+                }
+                while ($row = mysqli_fetch_assoc($resultta1)) {
+                  if ($row['working_hours_m'] == '') {
+                    $cond1 = 0;
+                  } else {
+                    $cond1 = $row['working_hours_m'];
+                  }
+                ?>
+                  <td>
+                    <div class="td-12cd"><?php echo $cond1 ?></div>
+                  </td>
+                <?php
+                }
+                while ($row = mysqli_fetch_assoc($resultta2)) {
+                  if ($row['working_hours_3m'] == '') {
+                    $cond2 = 0;
+                  } else {
+                    $cond2 = $row['working_hours_3m'];
+                  }
+                ?>
+                  <td>
+                    <div class="td-12ce"><?php echo $cond2 ?></div>
+                  </td>
+                <?php
+                }
+                ?>
+              </tr>
+            <?php
+              break;
+            }
+            $i++;
+
+
+            ?>
+
+          <?php
+
+          }
+
+          $mysqli->close();
+
+          ?>
+
+        </table>
+      </div>
+      <!-- </div> -->
+    </div>
+    <div class="item4">
+      <div class="item4d1">
+        Campaign Success Rate
+      </div>
+      <!-- <div id="table-wrapper"> -->
+
+      <table class="item4d2">
+        <!-- <div> -->
+        <th class="th-41">#</th>
+        <th class="th-42" style="margin-left:1% ">Name</th>
+
+        <th class="th-43">Leads</th>
+      </table>
+      <div id="table-scroll">
+        <table>
+          <tr>
+            <?php
+            while ($row = mysqli_fetch_assoc($rescsr)) {
+
+            ?>
+              <td>
+                <div class="td-12ab"><?php echo $row['id'] ?></div>
+              </td>
+
+              <td>
+
+                <div class="td-41b"><?php echo $row['campaign_name'] ?></div>
+
+              </td>
+              <td>
+                <div class="td-41c"><?php echo $row['campaign_leads'] ?></div>
+              </td>
+
+          </tr>
+        <?php
+            }
+        ?>
+
+        <!-- </div> -->
+
+        </table>
+
+      </div>
+      <!-- </div> -->
+    </div>
+  </div>
+  <div class="grid-container-last">
+    <div class="grid-last">
+      <div class="ll">Profit</div>
+      <!--        
+        <div  id="chartContainer" ></div> -->
+      <!-- <img src="Chart3.png" class="img3"/> -->
+      <canvas id="speedChart1"></canvas>
+    </div>
+  </div>
+
+
+  <script>
+    var data = {
+      labels: <?php echo json_encode($month) ?>,
+      datasets: [{
+        label: "Expenses",
+        backgroundColor: '#FFC738',
+        borderColor: "#FFC738",
+        // borderWidth: 0,
+        hoverBackgroundColor: "rgba(255,99,132,0.4)",
+        hoverBorderColor: "rgba(255,99,132,1)",
+        data: <?php echo json_encode($amount) ?>,
+      }]
+    };
+    //Chart.defaults.scale.gridLines.display = false;
+
+    var options = {
+      maintainAspectRatio: false,
+      scales: {
+        yAxes: [{
+          ticks: {
+            min: 0,
+            max: 1000
+          }
+        }],
+        y: {
+          stacked: true,
+          grid: {
+            display: true,
+            color: "rgba(255,99,132,0.2)"
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      }
+    };
+
+    new Chart('chart', {
+      type: 'bar',
+      options: options,
+      data: data,
+
+    });
+  </script>
+
+
+
+
+
+
+
+  <!-- 
+      <script>
+        
+        window.onload = function () {
+           
+        var chart = new CanvasJS.Chart("chartContainer", {
+          animationEnabled: true,
+          theme: "light1",
+            
+          title:{
+            text: ""
+          },
+            axisY: {
+            gridThickness: 0,
+            stripLines: [
+              {
+                value: 1,
+                // showOnTop: true,
+                color: "gray",
+                thickness: 2
+              }
+            ]
+         },
+          data: [{        
+            type: "line",
+                indexLabelFontSize: 16,
+                  
+            dataPoints: [
+              { y: 1000 },
+              { y: 500},
+              { y: 500},
+              { y: 5000 },
+              { y: 4000 },
+              { y: 4500 },
+              { y: 1500 },
+              { y: 3000 },
+              { y: 2500 },
+              { y: 1500 },
+              { y: 1000 },
+              { y: 1000 },
+              { y: 3000 }
+            ]
+          }]
+        });
+        
+        chart.render();
+        
+        }
+        </script> -->
+
+  <script>
+    var speedCanvas1 = document.getElementById("speedChart1");
+
+
+    var dataFirst = {
+      label: "",
+      data: <?php echo json_encode($sale) ?>,
+      lineTension: 0,
+      fill: false,
+      borderColor: 'black'
+    };
+
+
+    var speedData1 = {
+      labels: <?php echo json_encode($year) ?>,
+      datasets: [dataFirst]
+    };
+
+    var chartOptions = {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          boxWidth: 0,
+          fontColor: 'black'
+        }
+      }
+    };
+
+    var lineChart = new Chart(speedCanvas1, {
+      type: 'line',
+      data: speedData1,
+      options: chartOptions
+    });
+  </script>
+
+  <?php
+  ?>
+  <script>
+    var speedCanvas = document.getElementById("speedChart");
+
+
+    var dataFirst = {
+      label: "SMS In",
+      data: ["", null, 700, 600, 20, 755, 40, 150, 50, 800, 500, 0, 200, 900],
+      lineTension: 0,
+      fill: false,
+      borderColor: '#2DC12A',
+      backgroundColor: '#2DC12A'
+    };
+
+    var dataSecond = {
+      label: "SMS Out",
+      data: [0, 0, 50, 280, 700, 0, 400, 300, 100, 600, 450, 100],
+      lineTension: 0,
+      fill: false,
+      borderColor: '#FF3838',
+      backgroundColor: '#FF3838'
+    };
+    var dataThird = {
+      label: "Calls In",
+      data: [300, 550, 75, 250, 620, 750, 300, 150, 300, 400],
+      lineTension: 0,
+      fill: false,
+      borderColor: '#FFC738',
+      backgroundColor: '#FFC738'
+    };
+
+    var dataFourth = {
+      label: "Calls Out",
+      data: [260, 300, 690, 300, 780, 200, 990, 500, 750, 800, 730],
+      lineTension: 0,
+      fill: false,
+      borderColor: '#FF8B38',
+      backgroundColor: '#FF8B38'
+    };
+    var speedData = {
+      labels: ["Jan", "Feb", "Mar", "April", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"],
+      datasets: [dataFirst, dataSecond, dataThird, dataFourth]
+    };
+
+    var chartOptions = {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          boxWidth: 40,
+          usePointStyle: true,
+          fontColor: 'black'
+        }
+      }
+    };
+
+    var lineChart = new Chart(speedCanvas, {
+      type: 'line',
+      data: speedData,
+      options: chartOptions
+    });
+  </script>
+
+</div>
+</body>
+
+</html>
