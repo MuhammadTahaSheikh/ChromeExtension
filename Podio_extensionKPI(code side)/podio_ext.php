@@ -347,14 +347,10 @@ foreach ($profitchart as $data) {
 
 
 
-$query = "SELECT DATE_FORMAT(created_at, '%b') AS `Month`, title, COUNT(*) AS `count`, created_at 
-FROM telemarketing 
-INNER JOIN types ON telemarketing.type_id = types.id 
-WHERE created_at >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL 11 MONTH) 
-  AND title IN ('sms-in', 'sms-out', 'call-in', 'call-out') 
-  AND company_id = $company_id  
-GROUP BY DATE_FORMAT(created_at, '%Y-%m'), `Month`, title, created_at 
-ORDER BY DATE_FORMAT(created_at, '%Y-%m')";
+$query = "SELECT DATE_FORMAT(created_at, '%b') AS `Month`, title, created_at, COUNT(*) AS `count` FROM telemarketing 
+INNER JOIN types ON telemarketing.type_id = types.id WHERE created_at >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL 11 MONTH)
+ AND title IN ('sms-in', 'sms-out', 'call-in', 'call-out') AND company_id = $company_id
+ GROUP BY DATE_FORMAT(created_at, '%Y-%m'), `Month`, title ORDER BY DATE_FORMAT(created_at, '%Y-%m')";
 
 $result = $mysqli->query($query);
 $monthYear = array();
@@ -402,7 +398,7 @@ foreach ($chartData as $title => $data) {
     $count = isset($data[$month]) ? $data[$month] : 0;
     $dataset['data'][] = $count;
   }
- 
+
   $datasets[] = $dataset;
 }
 
@@ -455,41 +451,43 @@ foreach ($chartData as $title => $data) {
       <div class="grid-item">
 
         <div class="fl-div1">Lead Temperature</div>
-        <table class="t-1">
-          <tr>
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="tele_week">Week</th>
+              <th class="tele_month">Month</th>
+              <th class="tele_mmonth">3 Month</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="td_lab"><span class="circle" style="background-color:#FF8B38 ;"></span><span>Hot</span>
+              </td>
 
-            <th class="th-1"><span class="th-s1a">Week</span></th>
-            <th class="th-1a"><span class="th-s1a">Month</span></th>
-            <th class="th-1b"><span class="th-s1b">3 Month</span></th>
-          </tr>
+              <td class="td_data"><?php echo $HotWeek ?></td>
+              <td class="td_data"><?php echo $HotMonth ?></td>
+              <td class="td_data"><?php echo $Hot3Month ?></td>
+            </tr>
+            <tr>
+              <td class="td-1">
+                <span class="circle" style="background-color:#FFC738 ;"></span><span>Warm</span>
+              </td>
+              <td class="td_data"><?php echo $WarmWeek ?></td>
+              <td class="td_data"><?php echo $WarmMonth ?></td>
+              <td class="td_data"><?php echo $Warm3Month ?></td>
+            </tr>
+            <tr>
+              <td class="td-1">
+                <span class="circle" style="background-color:#38ABFF ;"></span><span>Cold</span>
+              </td>
+              <td class="td_data"><?php echo $ColdWeek ?></td>
+              <td class="td_data"><?php echo $ColdMonth ?></td>
+              <td class="td_data"><?php echo $Cold3Month ?></td>
+            </tr>
+          </tbody>
         </table>
-        <table class="tab-1">
-          <tr>
-            <td class="td-1">
-              <div class="circle" style="background-color:#FF8B38 ;"> </div><span>Hot</span>
-            </td>
 
-            <td class="td-2s"><?php echo $HotWeek ?></td>
-            <td class="td-2jj"><?php echo $HotMonth ?></td>
-            <td class="td-2pp"><?php echo $Hot3Month ?></td>
-          </tr>
-          <tr>
-            <td class="td-1">
-              <div class="circle" style="background-color:#FFC738 ;"></div><span>Warm</span>
-            </td>
-            <td class="td-2s"><?php echo $WarmWeek ?></td>
-            <td class="td-2jj"><?php echo $WarmMonth ?></td>
-            <td class="td-2pp"><?php echo $Warm3Month ?></td>
-          </tr>
-          <tr>
-            <td class="td-1">
-              <div class="circle" style="background-color:#38ABFF ;"></div><span>Cold</span>
-            </td>
-            <td class="td-2s"><?php echo $ColdWeek ?></td>
-            <td class="td-2jj"><?php echo $ColdMonth ?></td>
-            <td class="td-2pp"><?php echo $Cold3Month ?></td>
-          </tr>
-        </table>
 
 
       </div>
@@ -644,7 +642,7 @@ foreach ($chartData as $title => $data) {
       </div>
       <div class="contract_three">
         <p class="contract_data1">PPC Leads <img src="images/Group 7.png" alt="" class="escrow_img"></p>
-        <div class="contract_imgdata">
+        <div class="contract_imgdata1">
           <table class="tb_sign1">
             <tr>
               <th class="th_sign1">Week</th>
@@ -821,7 +819,7 @@ foreach ($chartData as $title => $data) {
     </div>
     <div class="contract_three">
       <p class="contract_data1">Closed Escrows <img src="images/Group 4.png" alt="" class="escrow_img"></p>
-      <div class="contract_imgdata">
+      <div class="contract_imgdata1">
         <table class="tb_sign1">
           <tr>
             <th class="th_sign1">1 Month</th>
@@ -870,103 +868,106 @@ foreach ($chartData as $title => $data) {
       <!-- <div id="table-wrapper"> -->
 
       <div class="basicPackagesUL">
-  <table class="tb_vahour">
-    <thead>
-      <tr>
-        <th class="t_hash1">#</th>
-        <th class="t_name1">Name</th>
-        <th class="t_lead1">Leads</th>
-      </tr>
-    </thead>
-    <tbody class="t_body">
-      <?php while ($row = mysqli_fetch_assoc($rescsr)) : ?>
-        <tr>
-          <td>
-            <div class="csr_id"><?php echo $row['id'] ?></div>
-          </td>
-          <td>
-            <div class="csr_name"><?php echo $row['campaign_name'] ?></div>
-          </td>
-          <td>
-            <div class="csr_lead"><?php echo $row['campaign_leads'] ?></div>
-          </td>
-        </tr>
-      <?php endwhile; ?>
-    </tbody>
-  </table>
-</div>
+        <table class="tb_vahour">
+          <thead>
+            <tr>
+              <th class="t_hash1">#</th>
+              <th class="t_name1">Name</th>
+              <th class="t_lead1">Leads</th>
+            </tr>
+          </thead>
+          <tbody class="t_body">
+            <?php
+            $count = 0; // Initialize the count variable outside the loop
 
+            while ($row = mysqli_fetch_assoc($rescsr)) :
+              $count++; // Increment count for each row
+            ?>
 
+              <tr>
+                <td>
+                  <div class="csr_id"><?php echo $count ?></div>
+                </td>
+                <td class="csr_name">
+                  <div><?php echo $row['campaign_name'] ?></div>
+                </td>
+                <td>
+                  <div class="csr_lead"><?php echo $row['campaign_leads'] ?></div>
+                </td>
+              </tr>
 
+            <?php
+            endwhile;
+            ?>
+
+          </tbody>
+        </table>
+      </div>
     </div>
-
-
-
-
-
 
     <div class="item3">
       <div class="va_hour">VA’s Hours</div>
 
       <div class="basicPackagesUL">
-      <table class="tb_vahour">
-        <thead>
-          <tr>
-            <th class="t_hash">#</th>
-            <th class="t_name">Name</th>
-            <th class="w_chan">Week</th>
-            <th class="m_chan">Month</th>
-            <th class="m3_chan">3 Month</th>
-          </tr>
-        </thead>
-        <tbody class="t_body">
-          <?php
-          $sql = "SELECT * FROM va_hours WHERE `company_id`=$company_id";
-          $result = $mysqli->query($sql);
-
-          while ($row = mysqli_fetch_assoc($result)) {
-            $va_id = $row['id'];
-            $va_name = $row['name'];
-
-            $week_hours = get_hours($va_id, "1 WEEK");
-            $month_hours = get_hours($va_id, "1 MONTH");
-            $three_month_hours = get_hours($va_id, "3 MONTH");
-          ?>
-
+        <table class="tb_vahour">
+          <thead>
             <tr>
-              <td>
-                <div class="va_id"><?php echo $va_id ?></div>
-              </td>
-              <td>
-                <div class="va_name">
-                  <div class=""><?php echo $va_name ?></div>
-                </div>
-              </td>
-              <td>
-                <div class="va_week"><?php echo $week_hours ?></div>
-              </td>
-              <td>
-                <div class="va_month"><?php echo $month_hours ?></div>
-              </td>
-              <td>
-                <div class="va_3month"><?php echo $three_month_hours ?></div>
-              </td>
+              <th class="t_hash">#</th>
+              <th class="t_name">Name</th>
+              <th class="w_chan">Week</th>
+              <th class="m_chan">Month</th>
+              <th class="m3_chan">3 Month</th>
             </tr>
-          <?php
-          }
-          $mysqli->close();
-
-          function get_hours($va_id, $interval)
-          {
-            global $mysqli;
-            $sql = "SELECT working_hours AS `working_hours` FROM va_hours WHERE created_at BETWEEN DATE_SUB(NOW(), INTERVAL $interval) AND NOW() + INTERVAL 1 DAY AND id=$va_id";
+          </thead>
+          <tbody class="t_body">
+            <?php
+            $sql = "SELECT * FROM va_hours WHERE `company_id`=$company_id";
             $result = $mysqli->query($sql);
-            $row = mysqli_fetch_assoc($result);
-            return $row['working_hours'] ?? 0;
-          }
-          ?>
-        </tbody>
-      </table>
+            $count = 0;
+            while ($row = mysqli_fetch_assoc($result)) {
+              $count++;
+              $va_id = $row['id'];
+              $va_name = $row['name'];
+
+              $week_hours = get_hours($va_id, "1 WEEK");
+              $month_hours = get_hours($va_id, "1 MONTH");
+              $three_month_hours = get_hours($va_id, "3 MONTH");
+            ?>
+
+              <tr>
+                <td>
+                  <div class="va_id"><?php echo $count ?></div>
+                </td>
+                <td class="va_name">
+                  <div>
+                    <?php echo $va_name ?>
+                  </div>
+                </td>
+                <td>
+                  <div class="va_week"><?php echo $week_hours ?></div>
+                </td>
+                <td>
+                  <div class="va_month"><?php echo $month_hours ?></div>
+                </td>
+                <td>
+                  <div class="va_3month"><?php echo $three_month_hours ?></div>
+                </td>
+              </tr>
+            <?php
+            }
+            $mysqli->close();
+
+            function get_hours($va_id, $interval)
+            {
+              global $mysqli;
+              $sql = "SELECT working_hours AS `working_hours` FROM va_hours WHERE created_at BETWEEN DATE_SUB(NOW(), INTERVAL $interval) AND NOW() + INTERVAL 1 DAY AND id=$va_id";
+              $result = $mysqli->query($sql);
+              $row = mysqli_fetch_assoc($result);
+              return $row['working_hours'] ?? 0;
+            }
+            ?>
+          </tbody>
+        </table>
       </div>
 
     </div>
@@ -1217,19 +1218,20 @@ foreach ($chartData as $title => $data) {
           usePointStyle: true,
           fontColor: 'black'
         }
-      }                          
+      }
     };
-                                            
+
     var lineChart = new Chart(speedCanvas, {
       type: 'line',
       data: data,
       options: chartOptions
     });
-  </script>           
+  </script>
 
-  
+
 </body>
-</div>  
+</div>
+
 </body>
 
 </html>
